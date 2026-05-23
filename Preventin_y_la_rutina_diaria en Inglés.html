@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Preventin: Rutina Diaria en Inglés</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky1: #4FC3F7;
+            --sky2: #B3E5FC;
+            --grass: #43A047;
+            --grass-dark: #2E7D32;
+            --orange: #FF6D00;
+            --orange-dark: #E65100;
+            --blue: #1565C0;
+            --blue-light: #42A5F5;
+            --green: #2E7D32;
+            --green-light: #4CAF50;
+            --yellow: #FFD600;
+            --red: #D32F2F;
+            --purple: #6A1B9A;
+            --white: #FFFFFF;
+            --panel-bg: rgba(255,255,255,0.97);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            overflow: hidden;
+            background: linear-gradient(160deg, var(--sky1) 0%, var(--sky2) 100%);
+            font-family: 'Nunito', sans-serif;
+            touch-action: none;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #29B6F6 0%, #B3E5FC 60%, #81C784 100%);
+        }
+
+        canvas {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            border-radius: 12px;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border: 4px solid rgba(255,255,255,0.3);
+        }
+
+        /* ===== HUD ===== */
+        #hud {
+            position: absolute;
+            top: 16px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 28px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .hud-badge {
+            background: linear-gradient(135deg, #FF6D00, #FFB300);
+            color: white;
+            font-family: 'Fredoka One', cursive;
+            font-size: 22px;
+            padding: 8px 22px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(255,109,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+            letter-spacing: 1px;
+            border: 2px solid rgba(255,255,255,0.4);
+        }
+
+        .hud-lives {
+            font-size: 26px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        }
+
+        /* ===== OVERLAYS ===== */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 20px;
+            backdrop-filter: blur(6px);
+            background: rgba(10, 30, 80, 0.55);
+        }
+        .overlay.active { display: flex; }
+
+        /* ===== PANEL ===== */
+        .panel {
+            background: var(--panel-bg);
+            padding: 36px 32px 28px;
+            border-radius: 28px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 0 0 5px rgba(255,255,255,0.7);
+            max-width: 520px;
+            width: 92%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: panelPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        @keyframes panelPop {
+            from { transform: scale(0.7) translateY(30px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #FF6D00, #FFB300, #4CAF50, #2196F3, #9C27B0);
+            border-radius: 28px 28px 0 0;
+        }
+
+        /* ===== TITLE ===== */
+        .game-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 30px;
+            line-height: 1.1;
+            margin: 16px 0 6px;
+            background: linear-gradient(135deg, #FF6D00, #FF8F00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 2px 0 rgba(230,81,0,0.25));
+        }
+
+        h2.section-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 22px;
+            color: var(--blue);
+            margin-bottom: 10px;
+        }
+
+        .credits {
+            font-size: 13px;
+            color: #777;
+            font-weight: 600;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .instructions-box {
+            background: linear-gradient(135deg, #E3F2FD, #F1F8E9);
+            border: 2px solid #B3E5FC;
+            border-radius: 16px;
+            padding: 14px 18px;
+            font-size: 14px;
+            color: #333;
+            text-align: left;
+            margin-bottom: 22px;
+            line-height: 1.7;
+        }
+
+        .instructions-box strong {
+            color: var(--blue);
+            font-size: 15px;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            background: linear-gradient(135deg, #FF6D00, #FF8F00);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-family: 'Fredoka One', cursive;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #BF360C, 0 8px 20px rgba(255,109,0,0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+            margin: 8px auto;
+            width: 100%;
+            max-width: 300px;
+            display: block;
+            letter-spacing: 1px;
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #BF360C;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #FF8F00, #FFA000);
+        }
+
+        .btn-option {
+            background: linear-gradient(135deg, #1565C0, #1976D2);
+            box-shadow: 0 5px 0 #0D47A1, 0 7px 15px rgba(21,101,192,0.35);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 17px;
+            padding: 12px 24px;
+            letter-spacing: 0;
+            border-radius: 14px;
+            max-width: 100%;
+            margin: 5px auto;
+            transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+        }
+
+        .btn-option:hover {
+            background: linear-gradient(135deg, #1976D2, #1E88E5);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #0D47A1, 0 9px 18px rgba(21,101,192,0.4);
+        }
+
+        .btn-option:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #0D47A1;
+        }
+
+        .btn-correct {
+            background: linear-gradient(135deg, #2E7D32, #43A047) !important;
+            box-shadow: 0 5px 0 #1B5E20 !important;
+        }
+
+        .btn-wrong {
+            background: linear-gradient(135deg, #C62828, #E53935) !important;
+            box-shadow: 0 5px 0 #B71C1C !important;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #2E7D32, #43A047);
+            box-shadow: 0 5px 0 #1B5E20, 0 7px 15px rgba(46,125,50,0.35);
+        }
+
+        /* ===== QUESTION SCREEN ===== */
+        #questionText {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1A237E;
+            margin: 12px 0 20px;
+            line-height: 1.4;
+            background: #E8EAF6;
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+
+        #optionsContainer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .feedback-msg {
+            font-family: 'Fredoka One', cursive;
+            font-size: 26px;
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 14px;
+            animation: feedbackBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        @keyframes feedbackBounce {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .correct {
+            color: #1B5E20;
+            background: #E8F5E9;
+            border: 2px solid #A5D6A7;
+        }
+
+        .incorrect {
+            color: #B71C1C;
+            background: #FFEBEE;
+            border: 2px solid #EF9A9A;
+        }
+
+        /* ===== GAME OVER ===== */
+        .gameover-icon {
+            font-size: 64px;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%,100%{transform:rotate(0)} 20%{transform:rotate(-10deg)} 40%{transform:rotate(10deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(8deg)}
+        }
+
+        .final-score-box {
+            background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
+            border: 3px solid #FFD600;
+            border-radius: 16px;
+            padding: 14px 24px;
+            margin: 14px 0 20px;
+            font-size: 28px;
+            font-family: 'Fredoka One', cursive;
+            color: #E65100;
+        }
+
+        /* ===== SCORE FLOAT ANIMATION ===== */
+        .score-float {
+            position: absolute;
+            font-family: 'Fredoka One', cursive;
+            font-size: 28px;
+            color: #FFD600;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 20;
+            animation: floatUp 1.2s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+        }
+
+        /* ===== STARS BG ===== */
+        .deco-star {
+            position: absolute;
+            font-size: 22px;
+            opacity: 0.18;
+            animation: twinkle 3s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes twinkle {
+            from { opacity: 0.1; transform: scale(0.8); }
+            to { opacity: 0.3; transform: scale(1.1); }
+        }
+
+        /* ===== PROGRESS BAR (question count) ===== */
+        .progress-bar-container {
+            background: #E3F2FD;
+            border-radius: 50px;
+            height: 8px;
+            width: 100%;
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1565C0, #42A5F5);
+            border-radius: 50px;
+            transition: width 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-badge">⭐ <span id="score">0</span></div>
+        <div class="hud-lives" id="livesDisplay">❤️❤️❤️</div>
+    </div>
+
+    <audio id="bgMusic" src="background_music.mp3" loop></audio>
+
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+    <!-- ===== START SCREEN ===== -->
+    <div id="startScreen" class="overlay active">
+        <div class="panel">
+            <!-- Decorative stars -->
+            <div class="deco-star" style="top:10px;right:20px;animation-delay:.3s">⭐</div>
+            <div class="deco-star" style="top:30px;left:18px;font-size:16px;animation-delay:.9s">✨</div>
+            <div class="deco-star" style="bottom:20px;right:14px;animation-delay:1.5s">🌟</div>
+
+            <div style="font-size:56px;margin-bottom:4px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.2))">🦁</div>
+            <h1 class="game-title">Preventin:<br>Daily Routine in English</h1>
+            <p class="credits">✏️ Creado por la Profe <strong style="color:#FF6D00">Andrea Guerrero</strong><br>
+            Institución Ciudadela del Sur · Sede La Fachada</p>
+
+            <div class="instructions-box">
+                <strong>📋 Cómo jugar:</strong><br>
+                🖱️ Toca o presiona <kbd style="background:#E8EAF6;padding:1px 6px;border-radius:4px;font-weight:700">Espacio</kbd> para <strong>saltar</strong><br>
+                👾 Salta <em>encima</em> de los enemigos para vencerlos<br>
+                📖 Golpea los libros <em>desde abajo</em> con la cabeza para responder preguntas en inglés y ganar puntos
+            </div>
+
+            <button class="btn" onclick="startGame()">🎮 ¡JUGAR AHORA!</button>
+        </div>
+    </div>
+
+    <!-- ===== QUESTION SCREEN ===== -->
+    <div id="questionScreen" class="overlay">
+        <div class="panel">
+            <h2 class="section-title">📚 Daily Routine Challenge</h2>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="questionProgress" style="width:50%"></div>
+            </div>
+            <div id="questionText"></div>
+            <div id="optionsContainer"></div>
+            <div id="feedbackText" class="feedback-msg" style="display:none"></div>
+            <button id="continueBtn" class="btn btn-green" style="display:none" onclick="resumeGame()">▶️ Continuar</button>
+        </div>
+    </div>
+
+    <!-- ===== GAME OVER SCREEN ===== -->
+    <div id="gameOverScreen" class="overlay">
+        <div class="panel">
+            <div class="gameover-icon">😵</div>
+            <h1 class="game-title" style="font-size:32px">¡Oh no!</h1>
+            <p style="color:#555;font-size:15px;margin-bottom:8px">Un enemigo atrapó a Preventin...</p>
+            <div class="final-score-box">
+                🏆 Puntuación: <span id="finalScore">0</span>
+            </div>
+            <button class="btn" onclick="startGame()">🔄 Volver a Intentar</button>
+        </div>
+    </div>
+
+    <!-- GIF de Preventin: superpuesto sobre el canvas con posición absoluta -->
+<img id="preventinImg" src="preventin.gif" alt="Preventin" style="
+    display:none;
+    position:absolute;
+    pointer-events:none;
+    z-index:4;
+    image-rendering:auto;
+    transition: transform 0.05s;
+"/>
+</div>
+
+<script>
+    // =========================================================
+    //  BANCO DE PREGUNTAS
+    // =========================================================
+    const allQuestions = [
+        { q: "I ______ up at 6:00 AM.", options: ["wake", "sleep", "eat", "play"], correct: 0 },
+        { q: "I ______ my teeth every morning.", options: ["wash", "brush", "comb", "make"], correct: 1 },
+        { q: "I ______ a shower.", options: ["make", "do", "take", "go"], correct: 2 },
+        { q: "I ______ breakfast at 7:00 AM.", options: ["have", "drink", "cook", "watch"], correct: 0 },
+        { q: "I ______ to school by bus.", options: ["stay", "go", "jump", "read"], correct: 1 },
+        { q: "I ______ my homework in the afternoon.", options: ["make", "play", "do", "study"], correct: 2 },
+        { q: "I ______ lunch with my friends.", options: ["watch", "eat", "sleep", "brush"], correct: 1 },
+        { q: "I ______ TV in the evening.", options: ["listen", "watch", "look", "see"], correct: 1 },
+        { q: "I ______ to bed at 9:00 PM.", options: ["run", "walk", "go", "jump"], correct: 2 },
+        { q: "I get ______ after taking a shower.", options: ["dressed", "tired", "sleepy", "hungry"], correct: 0 },
+        { q: "I ______ my face with water and soap.", options: ["brush", "wash", "dry", "paint"], correct: 1 },
+        { q: "I play ______ my friends at the park.", options: ["to", "in", "with", "for"], correct: 2 },
+        { q: "I have ______ with my family at 7:00 PM.", options: ["breakfast", "lunch", "dinner", "snack"], correct: 2 },
+        { q: "I ______ a book before going to sleep.", options: ["write", "read", "paint", "draw"], correct: 1 },
+        { q: "I wake up ______ on Mondays.", options: ["late", "early", "never", "always"], correct: 1 }
+    ];
+
+    let availableQuestions = [];
+    let questionsAnswered = 0;
+
+    function getRandomQuestion() {
+        if (availableQuestions.length === 0) availableQuestions = [...allQuestions];
+        const idx = Math.floor(Math.random() * availableQuestions.length);
+        return availableQuestions.splice(idx, 1)[0];
+    }
+
+    // =========================================================
+    //  CANVAS SETUP
+    // =========================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const preventinImg = document.getElementById('preventinImg');
+
+    const GRAVITY = 0.6;
+    const JUMP_POWER = -12;
+    const GROUND_HEIGHT = 55;
+
+    let gameState = 'START';
+    let score = 0;
+    let lives = 3;
+    let animationId;
+    let frames = 0;
+    let particles = [];
+
+    let player = {};
+    let enemies = [];
+    let books = [];
+    let clouds = [];
+    let hills = [];
+
+    // =========================================================
+    //  INIT
+    // =========================================================
+    function initPlayer() {
+        player = { x: 100, y: canvas.height - GROUND_HEIGHT - 80, width: 60, height: 80, vy: 0, grounded: false };
+    }
+
+    function startGame() {
+        document.getElementById('bgMusic').play().catch(()=>{});
+        ['startScreen','gameOverScreen','questionScreen'].forEach(id =>
+            document.getElementById(id).classList.remove('active'));
+
+        score = 0; lives = 3; frames = 0;
+        enemies = []; books = []; particles = [];
+        availableQuestions = [...allQuestions];
+        questionsAnswered = 0;
+        updateScoreDisplay();
+        updateLivesDisplay();
+
+        clouds = Array.from({length:6}, () => ({
+            x: Math.random() * canvas.width,
+            y: 20 + Math.random() * 120,
+            speed: 0.4 + Math.random() * 0.8,
+            size: 18 + Math.random() * 22
+        }));
+
+        hills = [
+            {x: 0, y: canvas.height - GROUND_HEIGHT - 50, w: 200, h: 60, color:'#66BB6A'},
+            {x: 220, y: canvas.height - GROUND_HEIGHT - 35, w: 160, h: 45, color:'#81C784'},
+            {x: 430, y: canvas.height - GROUND_HEIGHT - 55, w: 230, h: 65, color:'#4CAF50'},
+            {x: 680, y: canvas.height - GROUND_HEIGHT - 40, w: 180, h: 50, color:'#66BB6A'}
+        ];
+
+        initPlayer();
+        gameState = 'PLAYING';
+        if(animationId) cancelAnimationFrame(animationId);
+        gameLoop();
+    }
+
+    function gameOver() {
+        const music = document.getElementById('bgMusic');
+        music.pause(); music.currentTime = 0;
+        gameState = 'GAME_OVER';
+        preventinImg.style.display = 'none';
+        document.getElementById('finalScore').innerText = score;
+        document.getElementById('gameOverScreen').classList.add('active');
+        spawnParticles(player.x + player.width/2, player.y + player.height/2, '#F44336', 14);
+    }
+
+    // =========================================================
+    //  CONTROLES
+    // =========================================================
+    function jump() {
+        if (gameState === 'PLAYING' && player.grounded) {
+            player.vy = JUMP_POWER;
+            player.grounded = false;
+        } else if (gameState === 'START') startGame();
+    }
+
+    window.addEventListener('keydown', e => { if(e.code==='Space'){e.preventDefault();jump();} });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); jump(); });
+    canvas.addEventListener('mousedown', e => { e.preventDefault(); jump(); });
+
+    // =========================================================
+    //  PARTICLES
+    // =========================================================
+    function spawnParticles(x, y, color, count) {
+        for(let i=0;i<count;i++) {
+            const angle = (Math.PI*2/count)*i;
+            const speed = 2 + Math.random()*4;
+            particles.push({
+                x, y,
+                vx: Math.cos(angle)*speed,
+                vy: Math.sin(angle)*speed - 2,
+                alpha: 1,
+                color,
+                size: 5 + Math.random()*6,
+                life: 45
+            });
+        }
+    }
+
+    function updateParticles() {
+        for(let i=particles.length-1;i>=0;i--) {
+            const p = particles[i];
+            p.x += p.vx; p.y += p.vy;
+            p.vy += 0.15;
+            p.alpha -= 1/p.life;
+            p.life--;
+            if(p.life<=0) particles.splice(i,1);
+        }
+    }
+
+    function drawParticles() {
+        particles.forEach(p => {
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    // =========================================================
+    //  UPDATE
+    // =========================================================
+    function update() {
+        if(gameState !== 'PLAYING') return;
+        frames++;
+
+        // Player physics
+        player.vy += GRAVITY;
+        player.y += player.vy;
+        if(player.y + player.height >= canvas.height - GROUND_HEIGHT) {
+            player.y = canvas.height - GROUND_HEIGHT - player.height;
+            player.vy = 0;
+            player.grounded = true;
+        } else { player.grounded = false; }
+
+        updateParticles();
+
+        // Clouds
+        if(frames % 140 === 0) clouds.push({x:canvas.width+50, y:20+Math.random()*120, speed:0.4+Math.random()*0.8, size:18+Math.random()*22});
+        clouds.forEach(c => c.x -= c.speed);
+        clouds = clouds.filter(c => c.x > -150);
+
+        // Hills scroll
+        hills.forEach(h => { h.x -= 1.2; if(h.x + h.w < 0) h.x = canvas.width + 50; });
+
+        // Enemies
+        if(frames % 180 === 0) {
+            enemies.push({
+                x: canvas.width,
+                y: canvas.height - GROUND_HEIGHT - 44,
+                width: 44, height: 44,
+                speed: 3 + Math.random() * 2,
+                bobOffset: Math.random()*Math.PI*2
+            });
+        }
+
+        // Books
+        if(frames % 260 === 0) {
+            books.push({
+                x: canvas.width,
+                y: canvas.height - GROUND_HEIGHT - 140 - Math.random()*40,
+                width: 52, height: 44,
+                speed: 2.2, active: true
+            });
+        }
+
+        // Enemy collision
+        for(let i=enemies.length-1;i>=0;i--) {
+            let e = enemies[i];
+            e.x -= e.speed;
+
+            if(e.x < player.x+player.width-10 && e.x+e.width > player.x+10 &&
+               e.y < player.y+player.height && e.y+e.height > player.y) {
+                if(player.vy > 0 && player.y+player.height-player.vy <= e.y+18) {
+                    spawnParticles(e.x+e.width/2, e.y+e.height/2, '#FF5252', 10);
+                    enemies.splice(i,1);
+                    player.vy = JUMP_POWER * 0.75;
+                    addScore(5);
+                    showFloatingScore(5, player.x+player.width/2, player.y);
+                } else {
+                    lives--;
+                    updateLivesDisplay();
+                    enemies.splice(i,1);
+                    if(lives <= 0) { gameOver(); return; }
+                    // Brief invincibility flash not implemented; just reset
+                }
+            }
+            if(e.x + e.width < 0) enemies.splice(i,1);
+        }
+
+        // Books collision
+        for(let i=books.length-1;i>=0;i--) {
+            let b = books[i];
+            b.x -= b.speed;
+            if(b.active &&
+               b.x < player.x+player.width && b.x+b.width > player.x &&
+               b.y < player.y+player.height && b.y+b.height > player.y) {
+                if(player.vy < 0 && player.y - player.vy > b.y + b.height - 15) {
+                    b.active = false;
+                    player.vy = 0;
+                    books.splice(i,1);
+                    spawnParticles(b.x+b.width/2, b.y, '#FFD600', 8);
+                    triggerQuestion();
+                }
+            }
+            if(b.x + b.width < 0) books.splice(i,1);
+        }
+    }
+
+    // =========================================================
+    //  DRAW
+    // =========================================================
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Sky gradient
+        const skyGrad = ctx.createLinearGradient(0,0,0,canvas.height);
+        skyGrad.addColorStop(0,'#29B6F6');
+        skyGrad.addColorStop(0.65,'#B3E5FC');
+        skyGrad.addColorStop(1,'#E1F5FE');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        // Sun
+        const sunGrad = ctx.createRadialGradient(720,60,8,720,60,45);
+        sunGrad.addColorStop(0,'#FFF9C4');
+        sunGrad.addColorStop(0.5,'#FFEE58');
+        sunGrad.addColorStop(1,'rgba(255,238,88,0)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath(); ctx.arc(720,60,45,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#FFEE58';
+        ctx.beginPath(); ctx.arc(720,60,20,0,Math.PI*2); ctx.fill();
+
+        // Clouds
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        clouds.forEach(c => {
+            const s = c.size;
+            ctx.beginPath();
+            ctx.arc(c.x,      c.y,        s,    0, Math.PI*2);
+            ctx.arc(c.x+s*0.9,c.y-s*0.5,  s*1.2, 0, Math.PI*2);
+            ctx.arc(c.x+s*1.9,c.y,        s,    0, Math.PI*2);
+            ctx.arc(c.x+s*2.9,c.y,        s*0.8,0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Rolling hills
+        hills.forEach(h => {
+            ctx.fillStyle = h.color;
+            ctx.beginPath();
+            ctx.ellipse(h.x + h.w/2, h.y + h.h, h.w/2, h.h, 0, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Ground
+        const gGrad = ctx.createLinearGradient(0, canvas.height - GROUND_HEIGHT, 0, canvas.height);
+        gGrad.addColorStop(0,'#43A047');
+        gGrad.addColorStop(1,'#1B5E20');
+        ctx.fillStyle = gGrad;
+        ctx.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, GROUND_HEIGHT);
+
+        // Ground stripe
+        ctx.fillStyle = '#66BB6A';
+        ctx.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, 10);
+
+        // Grass blades (decorative)
+        for(let gx = 10; gx < canvas.width; gx += 22) {
+            const phase = (frames * 1.2 + gx * 0.3) * 0.03;
+            ctx.strokeStyle = '#81C784';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(gx, canvas.height - GROUND_HEIGHT);
+            ctx.quadraticCurveTo(gx + Math.sin(phase)*5, canvas.height - GROUND_HEIGHT - 12, gx + Math.sin(phase)*3, canvas.height - GROUND_HEIGHT - 20);
+            ctx.stroke();
+        }
+
+        // Books
+        books.forEach(b => {
+            if(!b.active) return;
+            // Book shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.beginPath();
+            ctx.ellipse(b.x+b.width/2, b.y+b.height+4, b.width/2, 6, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Cover
+            const bookGrad = ctx.createLinearGradient(b.x, b.y, b.x+b.width, b.y);
+            bookGrad.addColorStop(0,'#6D4C41');
+            bookGrad.addColorStop(1,'#8D6E63');
+            ctx.fillStyle = bookGrad;
+            ctx.beginPath();
+            ctx.roundRect(b.x, b.y, b.width, b.height, 4);
+            ctx.fill();
+
+            // Pages
+            ctx.fillStyle = '#FFF9C4';
+            ctx.beginPath();
+            ctx.roundRect(b.x+5, b.y+2, b.width-7, b.height-4, 2);
+            ctx.fill();
+
+            // Spine accent
+            ctx.fillStyle = '#FFD600';
+            ctx.fillRect(b.x+3, b.y, 6, b.height);
+
+            // Lines
+            ctx.strokeStyle = '#BDBDBD';
+            ctx.lineWidth = 1;
+            for(let l=0;l<3;l++) {
+                ctx.beginPath();
+                ctx.moveTo(b.x+14, b.y+10+l*10);
+                ctx.lineTo(b.x+b.width-5, b.y+10+l*10);
+                ctx.stroke();
+            }
+
+            // ? symbol
+            ctx.fillStyle = '#1565C0';
+            ctx.font = 'bold 22px "Fredoka One", cursive';
+            ctx.textAlign = 'center';
+            ctx.fillText('?', b.x+b.width/2+4, b.y+b.height/2+8);
+        });
+
+        // Enemies (germs/monsters)
+        enemies.forEach((e,idx) => {
+            const bob = Math.sin(frames * 0.12 + e.bobOffset) * 4;
+            const ex = e.x, ey = e.y + bob, ew = e.width, eh = e.height;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.beginPath();
+            ctx.ellipse(ex+ew/2, e.y+eh+5, ew/2-4, 7, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Body
+            const bodyGrad = ctx.createRadialGradient(ex+ew/2-5, ey+eh/2-5, 2, ex+ew/2, ey+eh/2, ew/2);
+            bodyGrad.addColorStop(0,'#EF5350');
+            bodyGrad.addColorStop(0.5,'#E53935');
+            bodyGrad.addColorStop(1,'#B71C1C');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(ex+ew/2, ey+eh/2, ew/2, 0, Math.PI*2);
+            ctx.fill();
+
+            // Spikes
+            ctx.fillStyle = '#D32F2F';
+            for(let s=0;s<6;s++) {
+                const ang = (Math.PI*2/6)*s + frames*0.04;
+                const sx = ex+ew/2 + Math.cos(ang)*(ew/2+2);
+                const sy = ey+eh/2 + Math.sin(ang)*(eh/2+2);
+                ctx.beginPath();
+                ctx.arc(sx, sy, 5, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            // Eyes
+            ctx.fillStyle = 'white';
+            ctx.beginPath(); ctx.arc(ex+12, ey+16, 7, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(ex+32, ey+16, 7, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#1A237E';
+            ctx.beginPath(); ctx.arc(ex+13, ey+16, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(ex+33, ey+16, 4, 0, Math.PI*2); ctx.fill();
+            // Shine
+            ctx.fillStyle = 'white';
+            ctx.beginPath(); ctx.arc(ex+15, ey+14, 1.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(ex+35, ey+14, 1.5, 0, Math.PI*2); ctx.fill();
+
+            // Angry brows
+            ctx.strokeStyle = '#B71C1C';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(ex+7, ey+9); ctx.lineTo(ex+17, ey+12); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ex+27, ey+12); ctx.lineTo(ex+37, ey+9); ctx.stroke();
+
+            // Mouth
+            ctx.fillStyle = '#4A0000';
+            ctx.beginPath();
+            ctx.arc(ex+ew/2, ey+28, 8, 0, Math.PI);
+            ctx.fill();
+        });
+
+        // Preventin (player) — el GIF animado se posiciona sobre el canvas en updatePreventinGif()
+        // Fallback canvas si el GIF aún no cargó
+        if(!preventinImg.complete || preventinImg.naturalWidth === 0) {
+            ctx.fillStyle = '#FF9800';
+            ctx.beginPath();
+            ctx.roundRect(player.x, player.y+20, player.width, player.height-20, 10);
+            ctx.fill();
+            ctx.fillStyle = '#FFCC80';
+            ctx.beginPath(); ctx.arc(player.x+player.width/2, player.y+18, 18, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#5D4037';
+            ctx.beginPath(); ctx.arc(player.x+13, player.y+15, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(player.x+player.width-13, player.y+15, 4, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Particles
+        drawParticles();
+    }
+
+    // =========================================================
+    //  GIF OVERLAY — posiciona el <img> animado sobre el canvas
+    // =========================================================
+    function updatePreventinGif() {
+        const img = preventinImg;
+        if(gameState === 'PLAYING' || gameState === 'PAUSED_QUESTION') {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = rect.width  / canvas.width;
+            const scaleY = rect.height / canvas.height;
+
+            const gifW = player.width  * scaleX * 1.55;
+            const gifH = player.height * scaleY * 1.55;
+
+            const left = rect.left + window.scrollX + (player.x + player.width/2) * scaleX - gifW/2;
+            const top  = rect.top  + window.scrollY + (player.y + player.height/2) * scaleY - gifH/2;
+
+            img.style.display  = 'block';
+            img.style.left     = left + 'px';
+            img.style.top      = top  + 'px';
+            img.style.width    = gifW + 'px';
+            img.style.height   = gifH + 'px';
+        } else {
+            img.style.display = 'none';
+        }
+    }
+
+    // =========================================================
+    //  GAME LOOP
+    // =========================================================
+    function gameLoop() {
+        update();
+        draw();
+        updatePreventinGif();
+        if(gameState === 'PLAYING') animationId = requestAnimationFrame(gameLoop);
+    }
+
+    // =========================================================
+    //  UI HELPERS
+    // =========================================================
+    function updateScoreDisplay() { document.getElementById('score').innerText = score; }
+
+    function updateLivesDisplay() {
+        const hearts = '❤️'.repeat(Math.max(0,lives)) + '🖤'.repeat(Math.max(0,3-lives));
+        document.getElementById('livesDisplay').innerText = hearts;
+    }
+
+    function addScore(points) { score += points; updateScoreDisplay(); }
+
+    function showFloatingScore(pts, x, y) {
+        const div = document.createElement('div');
+        div.className = 'score-float';
+        div.innerText = `+${pts}`;
+        // Position relative to canvas
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = rect.width / canvas.width;
+        const scaleY = rect.height / canvas.height;
+        div.style.left = (rect.left + x * scaleX) + 'px';
+        div.style.top  = (rect.top  + y * scaleY) + 'px';
+        div.style.position = 'fixed';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 1200);
+    }
+
+    // =========================================================
+    //  QUESTION SYSTEM
+    // =========================================================
+    function triggerQuestion() {
+        gameState = 'PAUSED_QUESTION';
+        const qData = getRandomQuestion();
+        questionsAnswered++;
+
+        const progress = Math.min((questionsAnswered / allQuestions.length) * 100, 100);
+        document.getElementById('questionProgress').style.width = progress + '%';
+
+        document.getElementById('questionText').innerText = qData.q;
+        const optsContainer = document.getElementById('optionsContainer');
+        optsContainer.innerHTML = '';
+        const feedback = document.getElementById('feedbackText');
+        const continueBtn = document.getElementById('continueBtn');
+        feedback.style.display = 'none';
+        continueBtn.style.display = 'none';
+        optsContainer.style.display = 'grid';
+
+        qData.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-option';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(index, qData.correct, qData.options[qData.correct], btn, optsContainer);
+            optsContainer.appendChild(btn);
+        });
+
+        document.getElementById('questionScreen').classList.add('active');
+    }
+
+    function checkAnswer(selectedIndex, correctIndex, correctWord, clickedBtn, container) {
+        const feedback = document.getElementById('feedbackText');
+        const continueBtn = document.getElementById('continueBtn');
+
+        // Disable all buttons
+        container.querySelectorAll('.btn-option').forEach((b, i) => {
+            b.disabled = true;
+            if(i === correctIndex) b.classList.add('btn-correct');
+        });
+
+        feedback.style.display = 'block';
+        continueBtn.style.display = 'block';
+
+        if(selectedIndex === correctIndex) {
+            feedback.innerHTML = '🌟 ¡Excelente! <span style="color:#1B5E20">+10 Puntos</span>';
+            feedback.className = 'feedback-msg correct';
+            addScore(10);
+            showFloatingScore(10, player.x + player.width/2, player.y);
+        } else {
+            clickedBtn.classList.add('btn-wrong');
+            feedback.innerHTML = `😅 ¡Ups! La respuesta era <strong>"${correctWord}"</strong>`;
+            feedback.className = 'feedback-msg incorrect';
+        }
+    }
+
+    function resumeGame() {
+        document.getElementById('questionScreen').classList.remove('active');
+        gameState = 'PLAYING';
+        gameLoop();
+    }
+
+    // Initial draw
+    draw();
+</script>
+</body>
+</html>
